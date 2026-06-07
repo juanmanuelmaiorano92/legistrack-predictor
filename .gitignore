@@ -1,0 +1,11 @@
+# Datos pesados (no se commitean)
+*.csv
+*.sav
+*.xlsx
+data/
+# Secretos
+.env
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
