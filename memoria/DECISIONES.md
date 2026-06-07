@@ -64,4 +64,16 @@ Formato de cada entrada:
   que detectarlas antes de limpiar. Mantener este orden evita romper la consolidación.
 - **Impacto**: STG_2; orden de operaciones en la consolidación.
 
+### [2026-06-07] — Diseño del flujo de predicción (feature futura)
+- **Tipo**: decisión
+- **Qué**: el predictor no será "diputado + proyecto → un voto", sino "texto de ley + autor → cómo vota cada uno de los 257 diputados".
+- **Por qué**: la utilidad real es ver el panorama completo de votación para una ley hipotética, no consultar diputado por diputado.
+- **Impacto**: la spec de la feature de predicción (futura) debe diseñarse con esta salida masiva en mente. El selector de diputado de la app v1 es solo para explorar historial; no es el flujo del predictor.
+
+### [2026-06-07] — App Streamlit v1 (spec 001)
+- **Tipo**: decisión
+- **Qué**: se construyó la primera versión de la app con Streamlit. Muestra historial de votaciones por diputado (bloque, provincia, conteo de votos, últimas 10 votaciones) y un placeholder de predicción.
+- **Por qué**: tener algo funcional para presentar antes de que el modelo esté listo.
+- **Impacto**: archivos creados: `app/app.py`, `requirements.txt`, `data/df_consolidado.csv` (6.6 MB, 39.972 filas). Se ajustó `.gitignore` para permitir commitear el CSV.
+
 <!-- Nuevas entradas debajo de esta línea -->
