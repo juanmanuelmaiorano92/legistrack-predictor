@@ -114,4 +114,3 @@ La app se abre automáticamente en el navegador en `http://localhost:8501`.
 
 ---
 
-> Proyecto desarrollado en el marco de la carrera de Ciencia Política — 2025/2026
