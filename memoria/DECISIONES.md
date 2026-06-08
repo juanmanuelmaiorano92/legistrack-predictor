@@ -76,4 +76,16 @@ Formato de cada entrada:
 - **Por qué**: tener algo funcional para presentar antes de que el modelo esté listo.
 - **Impacto**: archivos creados: `app/app.py`, `requirements.txt`, `data/df_consolidado.csv` (6.6 MB, 39.972 filas). Se ajustó `.gitignore` para permitir commitear el CSV.
 
+### [2026-06-07] — Detalle técnico de la App Streamlit v1
+- **Tipo**: decisión
+- **Qué**: la app se construyó en `app/app.py` (44 líneas, solo pandas + streamlit estándar). Flujo: carga el CSV con `@st.cache_data`, muestra selector de diputado, al presionar "Consultar" filtra el dataframe y muestra bloque, provincia, conteo de votos y tabla de últimas 10 votaciones ordenadas por fecha. Placeholder de predicción al final.
+- **Por qué**: diseño minimalista elegido por el equipo — sin CSS, sin gráficos externos, solo componentes nativos de Streamlit.
+- **Impacto**: archivos del proyecto: `app/app.py`, `data/df_consolidado.csv`, `requirements.txt` (pandas + streamlit sin versión fija, para compatibilidad con Python 3.14 de Streamlit Cloud). `.gitignore` modificado: usa `data/*` + `!data/df_consolidado.csv` en vez de `data/` para permitir commitear el CSV procesado. Se configuró Git LFS para los CSV grandes (>100 MB) con `git lfs migrate import --include="*.csv" --everything`.
+
+### [2026-06-07] — Problema de versiones en Streamlit Cloud (Python 3.14)
+- **Tipo**: bug
+- **Qué**: el deploy inicial fallaba porque `pillow==10.4.0` (dependencia de `streamlit==1.35.0`) no tiene wheel precompilado para Python 3.14 y requería compilar desde fuente, lo que fallaba por falta de `zlib`.
+- **Por qué / causa raíz**: Streamlit Cloud usa Python 3.14 (muy nuevo). Las versiones fijas de pandas y streamlit no tienen wheels para esa versión. Al intentar compilar desde fuente, falta la librería del sistema `zlib`.
+- **Impacto**: se resolvió sacando las versiones fijas de `requirements.txt` (quedó solo `pandas` y `streamlit` sin versión). Esto permite que Streamlit Cloud elija las versiones más recientes que ya tienen wheels para Python 3.14.
+
 <!-- Nuevas entradas debajo de esta línea -->
