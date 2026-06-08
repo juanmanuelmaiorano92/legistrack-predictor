@@ -90,6 +90,12 @@ Formato de cada entrada:
 
 <!-- Nuevas entradas debajo de esta línea -->
 
+### [2026-06-08] — Reorganización de notebooks y rutas (spec 004)
+- **Tipo**: convención
+- **Qué**: los tres notebooks iniciales (`Scraping.ipynb`, `STG_1_Filtrado.ipynb`, `STG_2_transformacion.ipynb`) fueron movidos a `notebooks/`. Se corrigieron todas las rutas de lectura y escritura para que apunten a `../data/` (relativo a `notebooks/`). Se agregó celda `to_csv` al final de STG_1 (guarda `votaciones_filtrado.csv`) y STG_2 (guarda `df_consolidado.csv`).
+- **Por qué**: STG_1 y STG_2 no guardaban su output — al cerrar el notebook se perdía el resultado. Los notebooks estaban sueltos en la raíz en vez de en `notebooks/`.
+- **Impacto**: hay que re-correr STG_1 y STG_2 para regenerar los CSVs en `data/`. Antes de correr STG_1, mover `hcdn_votaciones_historico.csv` y `diputados_actuales.csv` a `data/` si están en la raíz. **Nota**: el nombre del CSV que genera Scraping (`votacion_{id}_completa.csv`) no coincide con el que lee STG_1 (`hcdn_votaciones_historico.csv`) — ese renombre se hacía manualmente; sigue siendo así.
+
 ### [2026-06-07] — Features semánticas de títulos (spec 003)
 - **Tipo**: decisión
 - **Qué**: se implementó `STG_4_features_titulo.ipynb` que genera embeddings de 384 dimensiones por título único usando `paraphrase-multilingual-MiniLM-L12-v2` (sentence-transformers) y agrupa los 1022 títulos en 20 temas con K-Means (`random_state=42`). La salida es `data/df_features_titulo.csv` (1022 filas × 387 columnas: `titulo_base`, `tema_id`, `tema_label`, `emb_0`...`emb_383`).
