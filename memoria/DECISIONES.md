@@ -89,3 +89,15 @@ Formato de cada entrada:
 - **Impacto**: se resolvió sacando las versiones fijas de `requirements.txt` (quedó solo `pandas` y `streamlit` sin versión). Esto permite que Streamlit Cloud elija las versiones más recientes que ya tienen wheels para Python 3.14.
 
 <!-- Nuevas entradas debajo de esta línea -->
+
+### [2026-06-07] — Filtro de títulos sin valor semántico (spec 002)
+- **Tipo**: decisión
+- **Qué**: se implementó `STG_3_filtro_titulos.ipynb` que elimina de `df_consolidado` los registros cuyo `titulo_base` no describe el contenido temático de una ley. El resultado se guarda como `df_modelado.csv`.
+- **Por qué**: mociones, habilitaciones, expedientes sin descripción y similares son ruido para el modelo. Entrenaría con títulos que nunca aparecerán como input real.
+- **Impacto**: `notebooks/STG_3_filtro_titulos.ipynb`, `data/df_modelado.csv` (nuevo archivo base para el modelado). `df_consolidado.csv` intacto.
+
+### [2026-06-07] — Bug en filtro de Exp./Expte. con re.IGNORECASE
+- **Tipo**: bug
+- **Qué**: los patrones `r'^EXPTE?\.\s+[\dA-Z\-\/\.\s]+$'` clasificaban mal títulos como `Expte. 0089-S-2020. DE LEY. CONVENIO...` (los filtraban cuando debían conservarse).
+- **Por qué / causa raíz**: `re.IGNORECASE` hace que `[A-Z]` también matchee minúsculas. Como la descripción "DE LEY. CONVENIO..." solo contiene letras, puntos y espacios, el patrón la consumía entera y daba falso positivo.
+- **Impacto**: se eliminaron esos patrones de `PATRONES_SIN_VALOR` y se delegó todo `Exp*/EXPTE*` a la función `_tiene_descripcion()`, que quita el número con un regex estricto (`^\d+-[A-Za-z]+-\d+`) sin depender de clases de caracteres amplias con IGNORECASE.
