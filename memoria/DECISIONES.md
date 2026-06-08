@@ -90,6 +90,33 @@ Formato de cada entrada:
 
 <!-- Nuevas entradas debajo de esta línea -->
 
+### [2026-06-07] — Features semánticas de títulos (spec 003)
+- **Tipo**: decisión
+- **Qué**: se implementó `STG_4_features_titulo.ipynb` que genera embeddings de 384 dimensiones por título único usando `paraphrase-multilingual-MiniLM-L12-v2` (sentence-transformers) y agrupa los 1022 títulos en 20 temas con K-Means (`random_state=42`). La salida es `data/df_features_titulo.csv` (1022 filas × 387 columnas: `titulo_base`, `tema_id`, `tema_label`, `emb_0`...`emb_383`).
+- **Por qué**: K=20 elegido tras comparar K=10/15/20 — produce grupos temáticamente más específicos y coherentes.
+- **Impacto**: `notebooks/STG_4_features_titulo.ipynb`, `data/df_features_titulo.csv` (nuevo). `df_modelado.csv` intacto.
+
+### [2026-06-07] — Grupo sin tema en clustering K=20 (spec 003)
+- **Tipo**: decisión
+- **Qué**: el grupo 11 del clustering K=20 fue marcado como `sin_clasificar` porque agrupa títulos del tipo "Votación en General y Particular de Proyectos de Ley..." — votos sobre lotes de proyectos sin ley identificable.
+- **Por qué**: hardcodeado (`GRUPOS_SIN_TEMA = {11}`) porque la auto-detección por regex falló por diferencias Unicode NFC/NFD, y el 42% de matcheo por substring quedaba bajo el umbral del 50%. El clustering es determinista (datos fijos + `random_state=42`) así que el ID del grupo no va a cambiar.
+- **Impacto**: `STG_4_features_titulo.ipynb` celda `c3286a33`. Si se re-ejecuta STG_3 y cambia `df_modelado.csv`, hay que re-verificar que el grupo 11 siga siendo el "sin tema".
+
+### [2026-06-07] — Ruido residual detectado en STG_4 y agregado a STG_3 (spec 003)
+- **Tipo**: bug
+- **Qué**: al inspeccionar el K=20, los grupos 0/3/5/9 contenían títulos que debían filtrarse en STG_3: Solicitud de Licencia, Habilitación de temas, VOTACION DESARROLLO DE LA SESION, Proceder a la Apertura del sobre, Renuncia del Dip., OD sin descripción (O.D. NNN), listas de O.D.s.
+- **Por qué / causa raíz**: los patrones de STG_3 solo cubrían los casos más frecuentes. Al ver los clusters temáticos reales quedó claro que había ruido residual.
+- **Impacto**: se agregaron patrones a `PATRONES_SIN_VALOR` y pasos a `_tiene_descripcion()` en `STG_3_filtro_titulos.ipynb`. El test suite creció de 18 a 36 casos (todos pasan). `df_modelado.csv` pasó de ~39k a 28.738 filas.
+
+### [2026-06-07] — Cierre de sesión
+- **Tipo**: convención
+- **Qué**: specs 002 y 003 completadas y validadas. Estado del proyecto al cierre:
+  - `data/df_modelado.csv`: 28.738 filas, 1022 títulos únicos (filtrado STG_3 aplicado)
+  - `data/df_features_titulo.csv`: 1022 filas × 387 columnas (embeddings + tema_id + tema_label)
+  - `notebooks/STG_3_filtro_titulos.ipynb`: 36/36 tests pasan
+  - `notebooks/STG_4_features_titulo.ipynb`: K=20, grupo 11 sin_clasificar
+- **Próximo paso**: spec 004 — features del diputado (historial de afinidad por bloque, por tema, etc.) para armar el dataset de entrenamiento final.
+
 ### [2026-06-07] — Filtro de títulos sin valor semántico (spec 002)
 - **Tipo**: decisión
 - **Qué**: se implementó `STG_3_filtro_titulos.ipynb` que elimina de `df_consolidado` los registros cuyo `titulo_base` no describe el contenido temático de una ley. El resultado se guarda como `df_modelado.csv`.
