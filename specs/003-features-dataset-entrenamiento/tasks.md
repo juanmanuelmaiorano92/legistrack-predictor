@@ -3,7 +3,7 @@
 > Cada tarea es chica y verificable. Se ejecutan en orden con /implementar.
 
 - [x] T1 — Crear notebook `notebooks/STG_4_features_titulo.ipynb`, instalar `sentence-transformers` en `requirements.txt`, cargar títulos únicos de `data/df_modelado.csv` e imprimir cantidad
-- [ ] T2 — Calcular embeddings con `paraphrase-multilingual-MiniLM-L12-v2` e imprimir shape de la matriz resultante (depende de: T1)
+- [x] T2 — Calcular embeddings con `paraphrase-multilingual-MiniLM-L12-v2` e imprimir shape de la matriz resultante (depende de: T1)
 - [ ] T3 — Correr K-Means con K=10, K=15 y K=20 (`random_state=42`); para cada K mostrar tamaño de grupos y los 5 títulos más cercanos al centro de cada grupo (depende de: T2)
 - [ ] T4 — Generar etiquetas automáticas por grupo: 5 palabras más frecuentes de los títulos del grupo, excluyendo stopwords en español + palabras legislativas vacías ("ley", "nacional", "artículo", "modificación") (depende de: T3)
 - [ ] T5 — Celda de elección de K: fijar `K_ELEGIDO` con el valor que elija el equipo y recalcular clustering final con ese K (depende de: T4)
