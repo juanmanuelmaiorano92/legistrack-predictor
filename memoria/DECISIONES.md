@@ -90,6 +90,12 @@ Formato de cada entrada:
 
 <!-- Nuevas entradas debajo de esta línea -->
 
+### [2026-06-09] — Spec 007: todos los archivos de datos disponibles en GitHub vía Git LFS
+- **Tipo**: decisión
+- **Qué**: se subieron todos los archivos de `data/` a GitHub. Los 6 CSV usan Git LFS (ya configurado en `.gitattributes` con `*.csv filter=lfs`). `titulos_autor.xlsx` y `data/README.md` van por Git normal. `.gitignore` actualizado: se eliminó el bloqueo `data/*` y solo quedan ignorados `.sav`, `.env` y archivos temporales de Python.
+- **Por qué**: los archivos solo existían en la computadora de quien los generó. Cualquier integrante que clonara el repo no podía correr los notebooks.
+- **Impacto**: archivos ahora en GitHub: `diputados_actuales.csv` (22 KB), `votaciones_filtrado.csv` (17.6 MB), `df_consolidado.csv` (7 MB, ya estaba), `df_modelado.csv` (6 MB), `df_features_titulo.csv` (4.7 MB), `proyectos_parlamentarios2.1.csv` (33 MB), `hcdn_votaciones_historico.csv` (140 MB, LFS), `titulos_autor.xlsx` (90 KB). Total subido a LFS: 201 MB. **Nota para el equipo**: Git LFS debe estar instalado antes de clonar (`git lfs install` + `git lfs pull`).
+
 ### [2026-06-09] — Spec 006: búsqueda de autor movida a STG 3
 - **Tipo**: decisión
 - **Qué**: la lógica de asignación de autor de proyecto (match determinístico por expediente + fuzzy TF-IDF) fue movida de STG 2 a STG 3. STG 2 quedó exclusivamente para la consolidación de votos. STG 3 ahora produce `df_modelado.csv` con las columnas `autor_final`, `camara_origen`, `fuente_autor`, `score_fuzzy`. Se agrega también `id_votacion` a la consolidación de STG 2 para que ese campo llegue a STG 3 y al Excel de auditoría.
