@@ -90,6 +90,21 @@ Formato de cada entrada:
 
 <!-- Nuevas entradas debajo de esta línea -->
 
+### [2026-06-09] — Resumen de estado al iniciar sesión
+- **Tipo**: convención
+- **Qué**: registro de contexto general del proyecto al 2026-06-09.
+  - Specs completas: 001 (app Streamlit v1), 002 (filtro títulos STG_3), 003 (features título STG_4), 004 (reorganización notebooks + rutas), 005 (README + guía de presentación PDF).
+  - Archivos clave: `notebooks/STG_3_filtro_titulos.ipynb`, `notebooks/STG_4_features_titulo.ipynb`, `app/app.py`, `data/df_modelado.csv` (28.738 filas), `data/df_features_titulo.csv` (1022 filas × 387 cols), `specs/005-documentacion-presentacion/guia-presentacion.pdf`.
+  - App publicada en Streamlit Cloud (branch `main`, `app/app.py`).
+- **Por qué**: el usuario pidió registrar el contexto del proyecto para arrancar la próxima sesión con todo el estado documentado.
+- **Impacto**: próxima sesión debe continuar con **spec 006** — features del diputado (historial de afinidad por bloque, por tema) para armar el dataset de entrenamiento final y comenzar el modelado.
+
+### [2026-06-08] — Documentación y guía de presentación (spec 005)
+- **Tipo**: decisión
+- **Qué**: se reescribió el README.md y se generó una guía de presentación en PDF para uso interno del equipo.
+- **Por qué**: el README anterior no reflejaba el estado real del proyecto (describía etapas que no existían y omitía las que sí). El equipo necesitaba un documento para presentar los avances en clase sin asumir conocimiento de programación.
+- **Impacto**: `README.md` actualizado con estado real (STG 1–4 + app completos, modelado pendiente), instrucciones de instalación y link a la app. `specs/005-documentacion-presentacion/guia-presentacion.pdf` generado con explicación funcional y técnica de cada etapa, estructura de encadenamiento de notebooks y preguntas frecuentes. El script de generación queda en `specs/005-documentacion-presentacion/generar_pdf.py` para regenerar el PDF ante correcciones. Python usado: anaconda3 (`C:/Users/TALIGENT/anaconda3/python.exe`); reportlab instalado en ese entorno.
+
 ### [2026-06-08] — Reorganización de notebooks y rutas (spec 004)
 - **Tipo**: convención
 - **Qué**: los tres notebooks iniciales (`Scraping.ipynb`, `STG_1_Filtrado.ipynb`, `STG_2_transformacion.ipynb`) fueron movidos a `notebooks/`. Se corrigieron todas las rutas de lectura y escritura para que apunten a `../data/` (relativo a `notebooks/`). Se agregó celda `to_csv` al final de STG_1 (guarda `votaciones_filtrado.csv`) y STG_2 (guarda `df_consolidado.csv`).
