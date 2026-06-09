@@ -1,9 +1,5 @@
-# Datos pesados (no se commitean)
+# Datos crudos no versionados
 *.sav
-*.xlsx
-data/*
-# Excepción: CSV procesado necesario para Streamlit Cloud
-!data/df_consolidado.csv
 # Secretos
 .env
 # Python
