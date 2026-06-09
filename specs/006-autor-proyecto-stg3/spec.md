@@ -15,7 +15,8 @@ así que corresponde moverla allí.
 
 **Qué entra:**
 - `data/df_consolidado.csv` — el dataset consolidado que produce STG 2 (votos por diputado
-  y proyecto, sin columnas de autor).
+  y proyecto, sin columnas de autor). A partir de esta spec, STG 2 también deberá conservar
+  `id_votacion` durante la consolidación (ver más abajo).
 - `data/proyectos_parlamentarios2.1.csv` — el catálogo de proyectos descargado del Congreso,
   con título, expediente, autor y cámara de origen.
 
@@ -34,31 +35,46 @@ así que corresponde moverla allí.
 **Qué sale:**
 - `data/df_modelado.csv` actualizado — mismo archivo de salida de STG 3, ahora con las
   columnas de autor incluidas.
-- `data/titulos_autor.xlsx` — tabla de auditoría con una fila por título único, pensada
-  para que el equipo complete manualmente los autores que faltan:
-  `titulo_base`, `id_proyecto` (expediente), `fecha_votacion` (la más reciente asociada
-  a ese título),
-  `autor_final`, `fuente_autor` (`exacto` / `fuzzy` / `sin_autor`), `score_fuzzy`.
+- `data/titulos_autor.xlsx` — tabla de auditoría con una fila por título único de
+  votación, pensada para que el equipo complete manualmente los autores que faltan.
+  Columnas:
+  - `titulo_votacion` → el `titulo_base` limpio de la votación
+  - `fecha_votacion`  → la fecha de votación más reciente asociada a ese título
+  - `id_votacion`     → el id numérico de la votación en la web de la HCDN
+    (ej: `5902`), que el scraping agrega a cada fila. Se toma el primer valor
+    del grupo al consolidar en STG 2. Puede ser vacío si la fila original no lo tenía.
+  - `autor_final`     → autor asignado (vacío si no se encontró)
+  - `fuente_autor`    → método de asignación: `determinístico`, `fuzzy`, o vacío
+  - `score_fuzzy`     → puntaje de similitud del match fuzzy (0 a 1); vacío si el
+    método fue determinístico o no hubo match
 
-**Qué deja de hacer STG 2:**
-- STG 2 se limpia: se eliminan las celdas que cargan el catálogo de proyectos y hacen la
-  búsqueda de autor. STG 2 solo consolida votos y guarda `df_consolidado.csv`.
+**Ajuste menor en STG 2:**
+- Se eliminan las celdas que cargan el catálogo de proyectos y hacen la búsqueda de autor.
+- Se agrega `id_votacion` a las columnas de contexto que se conservan durante la
+  consolidación (como `first`, es decir, se toma el primer id del grupo). Esto es necesario
+  para que `id_votacion` esté disponible en STG 3 y en el Excel de salida.
+  El `id_votacion` es el número de votación de la web de la HCDN (ej: `5902`), que el
+  scraping agrega como columna y que actualmente se pierde en el `groupby` de consolidación.
 
 ## Datos involucrados
 - `data/df_consolidado.csv`: columnas `diputado`, `titulo_base`, `bloque`, `provincia`,
-  `voto`, `fecha_votacion`.
+  `voto`, `fecha_votacion`, `id_votacion` (a partir de este cambio).
 - `data/proyectos_parlamentarios2.1.csv`: columnas `TITULO`, `EXP_DIPUTADOS`, `EXP_SENADO`,
   `AUTOR`, `CAMARA_ORIGEN`.
 
 ## Criterios de aceptación
 - [ ] STG 2 ya no contiene ninguna celda que cargue `proyectos_parlamentarios2.1.csv` ni
       calcule `autor_final`.
+- [ ] El `df_consolidado` producido por STG 2 **después** del cambio es idéntico al
+      producido **antes**, excepto por la columna nueva `id_votacion`. Se valida que:
+      el número de filas es el mismo, la distribución de votos es la misma, y los valores
+      de `diputado`, `titulo_base`, `bloque`, `provincia`, `voto` y `fecha_votacion`
+      son iguales fila a fila.
 - [ ] STG 3 produce `df_modelado.csv` con las cuatro columnas de autor:
       `autor_final`, `camara_origen`, `fuente_autor`, `score_fuzzy`.
 - [ ] Se genera `data/titulos_autor.xlsx` con las columnas:
-      `titulo_base`, `id_proyecto`, `fecha_votacion`, `autor_final`, `fuente_autor`,
-      `score_fuzzy`. Las filas con `fuente_autor = sin_autor` están presentes para
-      completado manual.
+      `titulo_votacion`, `fecha_votacion`, `id_votacion`, `autor_final`, `fuente_autor`,
+      `score_fuzzy`. Las filas sin autor están presentes para completado manual.
 - [ ] El umbral de fuzzy matching y el nombre del archivo de proyectos están parametrizados
       en variables al principio de la celda (no hardcodeados en la lógica).
 - [ ] El notebook STG 3 puede correrse de punta a punta sin errores después del cambio.
