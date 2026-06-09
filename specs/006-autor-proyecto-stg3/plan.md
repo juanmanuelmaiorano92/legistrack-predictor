@@ -86,9 +86,9 @@ punto relevante:
     `titulo_votacion` (= `titulo_base`), `fecha_votacion`, `id_votacion`
     (= `exp_extraido`, el expediente extraído del título), `autor_final`,
     `fuente_autor`, `score_fuzzy`.
-4. Verificar que STG 3 corre de punta a punta sin errores.
-5. Verificar que `df_modelado.csv` tiene las cuatro columnas de autor.
-6. Verificar que `titulos_autor.xlsx` tiene las seis columnas correctas
+6. Verificar que STG 3 corre de punta a punta sin errores.
+7. Verificar que `df_modelado.csv` tiene las cuatro columnas de autor.
+8. Verificar que `titulos_autor.xlsx` tiene las seis columnas correctas
    (`titulo_votacion`, `fecha_votacion`, `id_votacion`, `autor_final`, `fuente_autor`,
    `score_fuzzy`) y que las filas sin autor están presentes.
 
