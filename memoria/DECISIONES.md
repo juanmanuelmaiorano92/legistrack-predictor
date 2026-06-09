@@ -90,6 +90,12 @@ Formato de cada entrada:
 
 <!-- Nuevas entradas debajo de esta línea -->
 
+### [2026-06-09] — Spec 006: búsqueda de autor movida a STG 3
+- **Tipo**: decisión
+- **Qué**: la lógica de asignación de autor de proyecto (match determinístico por expediente + fuzzy TF-IDF) fue movida de STG 2 a STG 3. STG 2 quedó exclusivamente para la consolidación de votos. STG 3 ahora produce `df_modelado.csv` con las columnas `autor_final`, `camara_origen`, `fuente_autor`, `score_fuzzy`. Se agrega también `id_votacion` a la consolidación de STG 2 para que ese campo llegue a STG 3 y al Excel de auditoría.
+- **Por qué**: STG 2 tenía dos responsabilidades mezcladas. Separar mejora la claridad del pipeline. La búsqueda de autor es semánticamente parte del enriquecimiento de títulos, no de la consolidación de votos. Además, al mover la búsqueda a STG 3, opera solo sobre los 1022 títulos útiles (post-filtrado), no sobre todos los títulos del consolidado.
+- **Impacto**: archivos modificados: `notebooks/STG_2_transformacion.ipynb` (eliminadas celdas de autor, agregado `id_votacion`), `notebooks/STG_3_filtro_titulos.ipynb` (agregadas 8 celdas nuevas). Salidas: `data/df_modelado.csv` (ahora incluye columnas de autor e `id_votacion`), `data/titulos_autor.xlsx` (nueva: 1022 filas, 6 columnas, 710 sin autor para completado manual, 312 con autor — 30.5% de cobertura: 91 determinístico + 221 fuzzy).
+
 ### [2026-06-09] — Resumen de estado al iniciar sesión
 - **Tipo**: convención
 - **Qué**: registro de contexto general del proyecto al 2026-06-09.

@@ -30,34 +30,34 @@
 
 ## Parte B — Ampliar STG 3
 
-- [ ] T5 — En STG 3, agregar una celda de parámetros al inicio de la nueva sección
+- [x] T5 — En STG 3, agregar una celda de parámetros al inicio de la nueva sección
       (después de la celda de aplicación del filtro) con las variables:
       `URL_PROYECTOS = '../data/proyectos_parlamentarios2.1.csv'`,
       `THRESHOLD_FUZZY = 0.70`, `BATCH_SIZE = 200`.
       Agregar un comentario de aviso que indique que el archivo de proyectos debe estar
       en `data/` para que esta sección funcione. (depende de: T4)
 
-- [ ] T6 — Agregar celda de carga del catálogo de proyectos: leer
+- [x] T6 — Agregar celda de carga del catálogo de proyectos: leer
       `proyectos_parlamentarios2.1.csv`, quedarse con las columnas
       `['TITULO', 'EXP_DIPUTADOS', 'EXP_SENADO', 'AUTOR', 'CAMARA_ORIGEN']`
       e imprimir cuántos proyectos se cargaron. (depende de: T5)
 
-- [ ] T7 — Agregar las celdas de match exacto (por expediente extraído del título) y
+- [x] T7 — Agregar las celdas de match exacto (por expediente extraído del título) y
       match fuzzy (TF-IDF + coseno en lotes de BATCH_SIZE), copiadas y adaptadas de
       STG 2. La búsqueda opera sobre los títulos únicos de `df_modelado` (no de
       `df_consolidado`). Al final, imprimir la cobertura: cuántos títulos tuvieron
       match determinístico, fuzzy, y cuántos quedaron sin autor. (depende de: T6)
 
-- [ ] T8 — Agregar celda de merge: pegar las columnas `autor_final`, `camara_origen`,
+- [x] T8 — Agregar celda de merge: pegar las columnas `autor_final`, `camara_origen`,
       `fuente_autor`, `score_fuzzy` de vuelta en `df_modelado` usando `titulo_base`
       como clave. Si `df_modelado` ya tuviera esas columnas de una corrida anterior,
       descartarlas antes del merge para evitar duplicados. (depende de: T7)
 
-- [ ] T9 — Reemplazar (o actualizar) la celda de exportación de `df_modelado.csv` al
+- [x] T9 — Reemplazar (o actualizar) la celda de exportación de `df_modelado.csv` al
       final de STG 3 para que incluya las nuevas columnas de autor. Verificar que el
       archivo se guarda en `../data/df_modelado.csv` con encoding `utf-8-sig`. (depende de: T8)
 
-- [ ] T10 — Agregar celda de exportación de `titulos_autor.xlsx`: una fila por título
+- [x] T10 — Agregar celda de exportación de `titulos_autor.xlsx`: una fila por título
        único de votación, con las columnas `titulo_votacion`, `fecha_votacion`,
        `id_votacion`, `autor_final`, `fuente_autor`, `score_fuzzy`. Ordenar por
        `fuente_autor` (primero los sin autor) para facilitar el completado manual.
@@ -67,16 +67,16 @@
 
 ## Verificación final
 
-- [ ] T11 — Correr STG 3 de punta a punta y verificar:
+- [x] T11 — Correr STG 3 de punta a punta y verificar:
        - `df_modelado.csv` tiene las columnas `autor_final`, `camara_origen`,
          `fuente_autor`, `score_fuzzy` además de las columnas originales.
        - `titulos_autor.xlsx` tiene exactamente las seis columnas especificadas y
          contiene filas sin autor (para completado manual).
        (depende de: T10)
 
-- [ ] T12 — Validar contra todos los criterios de aceptación de la spec 006:
+- [x] T12 — Validar contra todos los criterios de aceptación de la spec 006:
        recorrer cada ítem y marcar cumplido o indicar qué falta. (depende de: T11)
 
-- [ ] T13 — Registrar el cierre de la spec 006 en `memoria/DECISIONES.md`:
+- [x] T13 — Registrar el cierre de la spec 006 en `memoria/DECISIONES.md`:
        decisión técnica tomada, archivos modificados, cobertura de autor obtenida.
        (depende de: T12)
