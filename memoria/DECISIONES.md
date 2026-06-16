@@ -90,6 +90,14 @@ Formato de cada entrada:
 
 <!-- Nuevas entradas debajo de esta línea -->
 
+### [2026-06-16] — Spec 008: fondo visual difuminado en la app (COMPLETA)
+- **Tipo**: decisión
+- **Qué**: fondo visual en la app Streamlit con tres fotos del Congreso (congreso3.jpg izquierda, exterior centro, interior recinto derecha) combinadas en un canvas fijo 1920×900px. Proporciones: costados 25% cada uno, centro 50%. Blur gaussiano radio 2, brillo 60%. El CSS usa `background-size: 100% auto` para mostrar la imagen completa sin recortes, con panel frosted-glass sobre el contenido para legibilidad.
+- **Por qué**: la app tenía fondo blanco sin identidad visual. Para la demo y presentación del TP se quiere un aspecto institucional.
+- **Bug resuelto durante implementación**: el degradado de fusión entre imágenes estaba invertido (`linspace(255,0)` en lugar de `linspace(0,255)`), lo que causaba artefactos visibles en las uniones. Causa raíz: en PIL `paste(src, pos, mask)`, mask=255 muestra `src` y mask=0 deja el canvas — la máscara para `der` debe ir de 0 (transparente al inicio del seam) a 255 (opaco al final).
+- **Bug resuelto**: Pillow 12 en Anaconda/Windows no tiene `libavif` compilado. Solución: convertir el AVIF a JPG manualmente con la app Fotos de Windows.
+- **Impacto**: archivos nuevos: `app/generar_fondo.py`, `app/assets/fondo_combinado.jpg`, `app/assets/congreso3.jpg`. Archivos modificados: `app/app.py`, `requirements.txt`.
+
 ### [2026-06-09] — Spec 007: todos los archivos de datos disponibles en GitHub vía Git LFS
 - **Tipo**: decisión
 - **Qué**: se subieron todos los archivos de `data/` a GitHub. Los 6 CSV usan Git LFS (ya configurado en `.gitattributes` con `*.csv filter=lfs`). `titulos_autor.xlsx` y `data/README.md` van por Git normal. `.gitignore` actualizado: se eliminó el bloqueo `data/*` y solo quedan ignorados `.sav`, `.env` y archivos temporales de Python.
