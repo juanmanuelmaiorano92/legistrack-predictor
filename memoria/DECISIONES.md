@@ -169,3 +169,33 @@ Formato de cada entrada:
 - **Qué**: los patrones `r'^EXPTE?\.\s+[\dA-Z\-\/\.\s]+$'` clasificaban mal títulos como `Expte. 0089-S-2020. DE LEY. CONVENIO...` (los filtraban cuando debían conservarse).
 - **Por qué / causa raíz**: `re.IGNORECASE` hace que `[A-Z]` también matchee minúsculas. Como la descripción "DE LEY. CONVENIO..." solo contiene letras, puntos y espacios, el patrón la consumía entera y daba falso positivo.
 - **Impacto**: se eliminaron esos patrones de `PATRONES_SIN_VALOR` y se delegó todo `Exp*/EXPTE*` a la función `_tiene_descripcion()`, que quita el número con un regex estricto (`^\d+-[A-Za-z]+-\d+`) sin depender de clases de caracteres amplias con IGNORECASE.
+
+### [2026-06-27] — Spec 009: modelado y predicción de votos (COMPLETA)
+- **Tipo**: decisión
+- **Qué**: se implementaron STG_5, STG_6, STG_7 y el informe .docx. Resultados clave:
+  - **Dataset de entrenamiento**: `data/df_entrenamiento.csv` — 25.082 filas × 401 cols (394 features). Se filtraron 3.656 votos AUSENTE (no son posición política).
+  - **Features**: 9 históricas/políticas + 384 embeddings semánticos + 1 tema_id. Anti-leakage garantizado con cumsum().shift(1) y assert automático.
+  - **Validación**: TimeSeriesSplit(n_splits=5) + holdout 20% más reciente. Sin split aleatorio en ningún punto.
+  - **Modelo ganador**: LGBMClassifier — CV F1-macro 0.383 ± 0.042, Holdout F1-macro 0.453.
+  - **Relleno de NaN**: cascada tema→hist→0.5 neutro. El 0.5 es el valor neutral (ni afinidad ni rechazo) y no se calculó como media del dataset (eso sería leakage global).
+  - **Tuning**: RandomizedSearchCV sobre LightGBM no mejoró al modelo por defecto (holdout 0.433 vs 0.453). Los hiperparámetros por defecto son robustos para este dataset.
+  - **Importancia de features**: embeddings 61.4%, features históricas 38.4%. La feature individual más importante es bloque_enc (6.7%) — la disciplina partidaria es el predictor más fuerte.
+- **Por qué**: completar el módulo de modelado para integrar luego la predicción en la app Streamlit.
+- **Impacto**: notebooks creados: STG_5, STG_6, STG_7. Artefactos: df_entrenamiento.csv, encoder_bloque_provincia.joblib, le_voto.joblib, informe_legistrack.docx y 6 PNGs en specs/009-modelado-prediccion-votos/.
+
+### [2026-06-27] — Bug doble paralelismo LightGBM + cross_val_score
+- **Tipo**: bug
+- **Qué**: `cross_val_score(n_jobs=-1)` con `LGBMClassifier(n_jobs=-1)` causaba TerminatedWorkerError por agotamiento de memoria.
+- **Por qué / causa raíz**: doble paralelismo — joblib spawneaba N procesos para los folds, y cada proceso spawneaba N threads de LightGBM. La solución es pasar `cv_n_jobs=1` a cross_val_score cuando el estimador ya usa todos los cores.
+- **Impacto**: STG_6 y STG_7 — LightGBM siempre se evalúa con `cross_val_score(..., n_jobs=1)`.
+
+### [2026-06-27] — Cierre de sesión
+- **Tipo**: convención
+- **Qué**: spec 009 completa y validada (24/24 criterios). Estado del proyecto al cierre:
+  - `notebooks/STG_5_features_diputado.ipynb`: pipeline de features anti-leakage
+  - `notebooks/STG_6_modelado.ipynb`: comparación 6 modelos, ganador LGBM F1=0.453
+  - `notebooks/STG_7_tuning.ipynb`: tuning sin mejora sobre el default
+  - `specs/009-modelado-prediccion-votos/informe_legistrack.docx`: informe académico completo con 6 imágenes
+  - `data/df_entrenamiento.csv`: dataset listo para la app
+  - `requirements.txt`: versiones fijas de todas las dependencias
+- **Próximo paso**: integrar el predictor en la app Streamlit (cargar el modelo entrenado, recibir un título de ley como input, devolver predicciones para los 257 diputados).
