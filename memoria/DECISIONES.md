@@ -199,3 +199,17 @@ Formato de cada entrada:
   - `data/df_entrenamiento.csv`: dataset listo para la app
   - `requirements.txt`: versiones fijas de todas las dependencias
 - **Próximo paso**: integrar el predictor en la app Streamlit (cargar el modelo entrenado, recibir un título de ley como input, devolver predicciones para los 257 diputados).
+
+### [2026-07-13] — Spec 010: API FastAPI para servir datos y predicciones (APROBADA)
+- **Tipo**: decisión
+- **Qué**: se aprobó `specs/010-api-fastapi/spec.md`. Alcance: backend FastAPI modular (routers, esquemas Pydantic, `database.py`) con dos endpoints — `GET /diputados/{id}` (historial de diputado, igual a lo que hoy calcula `app/app.py`) y `POST /predecir` (predicción masiva para los 257 diputados dado un título de ley, reutilizando el modelo LGBM ya entrenado en la spec 009, sin reentrenar). La app Streamlit deja de leer los CSV directamente y pasa a consumir estos endpoints por HTTP. Motivado por un checklist de MVP de la cátedra (18 ítems) adjuntado por el usuario.
+- **Por qué**: separar el backend de datos del frontend, cumpliendo la arquitectura modular exigida por el checklist, sin sofisticar de más (Principio 7).
+- **Fuera de alcance** (quedan para specs futuras): migración a Postgres/SQLAlchemy, login/JWT/bcrypt, deploy en Render/Streamlit Cloud, navegación multisección y gráficos Plotly/Altair en Streamlit.
+- **Riesgos anotados para /planificar**: generar embedding y tema (cluster K-Means) de un título nuevo en tiempo real sin reentrenar; mantener las features históricas del diputado actualizadas a la fecha de la predicción sin fuga de información. Se acordó con el usuario que si más adelante se agrega una feature al modelo, la lógica que arma el vector de features para un título nuevo (dentro de esta spec) debe quedar aislada en una sola función para poder actualizarla sin tocar el resto del endpoint.
+- **Impacto**: `specs/010-api-fastapi/spec.md` (nuevo). Próximo paso: `/planificar` para definir el `plan.md` técnico.
+
+### [2026-07-13] — Bug recurrente: saltos de línea reales dentro de strings (SyntaxError)
+- **Tipo**: bug
+- **Qué**: varias celdas de STG_5, STG_6 y STG_7 tenían un salto de línea real pegado dentro de un string de comillas simples/dobles (en vez de `\n` escapado), lo que da `SyntaxError: unterminated string literal` al ejecutar la celda. Apareció en: STG_5 T8 (`raise AssertionError(...)`), STG_6 T18 (`ax.set_title(f'...')`), STG_6 T19 (diccionario `grupos = {...}`), STG_7 T22 (lista `x = ['Por defecto...', 'Afinado...']`).
+- **Por qué / causa raíz**: en Python, un string entre comillas simples/dobles (no triples) no puede contener un salto de línea literal — solo puede llevar `\n` escapado. Probablemente el código se generó o se pegó con saltos de línea "crudos" dentro del string en vez del escape, en varios puntos distintos del pipeline.
+- **Impacto**: se corrigieron las 4 celdas reemplazando el salto de línea literal por `\n` escapado. Se validó con un script que compila (`compile()`) todas las celdas de código de los 8 notebooks de `notebooks/` — no quedan errores de sintaxis pendientes. Si aparece este mismo error en otra celda, buscar comillas que arrancan en una línea y no se cierran en la misma.
