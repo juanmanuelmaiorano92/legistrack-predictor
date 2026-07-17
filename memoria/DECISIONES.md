@@ -208,6 +208,68 @@ Formato de cada entrada:
 - **Riesgos anotados para /planificar**: generar embedding y tema (cluster K-Means) de un título nuevo en tiempo real sin reentrenar; mantener las features históricas del diputado actualizadas a la fecha de la predicción sin fuga de información. Se acordó con el usuario que si más adelante se agrega una feature al modelo, la lógica que arma el vector de features para un título nuevo (dentro de esta spec) debe quedar aislada en una sola función para poder actualizarla sin tocar el resto del endpoint.
 - **Impacto**: `specs/010-api-fastapi/spec.md` (nuevo). Próximo paso: `/planificar` para definir el `plan.md` técnico.
 
+### [2026-07-16] — Spec 010, Parte A completa: artefactos serializados (`STG_8`)
+- **Tipo**: decisión
+- **Qué**: se implementó y corrió de punta a punta `notebooks/STG_8_serializar_artefactos.ipynb` (tareas T1–T8 de `specs/010-api-fastapi/tasks.md`). Genera y guarda en `data/`: `modelo_lgbm.joblib` (LGBM ganador de la spec 009, reentrenado con los mismos hiperparámetros sobre train+holdout combinados), `kmeans_temas.joblib` (K=20, `random_state=42`, reproduce el 100% de los `tema_id` ya existentes), `mapa_temas.json` (`tema_id → tema_label`), y tres tablas snapshot — `snapshot_diputado.csv`, `snapshot_diputado_tema.csv`, `snapshot_bloque_tema.csv` — con las tasas históricas de cada diputado/bloque acumuladas **sin `.shift`** (acumulado total hasta hoy, sin excluir ningún voto, porque no hay ningún voto "actual" que descartar al predecir una ley futura).
+- **Por qué**: la spec 009 había dejado la serialización del modelo explícitamente fuera de alcance; sin estos artefactos la API de la spec 010 no tiene con qué predecir. Ninguno de estos pasos es una evaluación nueva ni leakage — está documentado en detalle en la propia notebook (celda de resumen T8).
+- **Chequeo de sanity check (T3)**: el modelo reentrenado da F1-macro = 0.989 sobre el holdout de `STG_6`, pero ese número **no es la métrica oficial** (el modelo ya vio esas filas al entrenarse con train+holdout combinados) — solo confirma que la serialización no rompió nada. **La métrica oficial para citar en la defensa del TP sigue siendo 0.453** (holdout genuino de `STG_6`, sin ver esos datos).
+- **Observación pendiente, no bloqueante**: el snapshot de diputados (`snapshot_diputado.csv`) tiene 259 diputados, no los 257 de la nómina actual mencionados en el proyecto. Viene de `df_modelado.csv` tal cual está hoy; no se investigó la causa raíz porque no es parte del alcance de la spec 010. Revisar al validar los criterios de aceptación (T20) o en una spec futura si afecta la nómina real de predicción.
+- **Impacto**: `notebooks/STG_8_serializar_artefactos.ipynb` (nuevo). Archivos nuevos en `data/`: `modelo_lgbm.joblib`, `kmeans_temas.joblib`, `mapa_temas.json`, `snapshot_diputado.csv`, `snapshot_diputado_tema.csv`, `snapshot_bloque_tema.csv`. Próximo paso: Parte B de la spec 010 — construir la API FastAPI (`api/`) que carga estos artefactos.
+
+### [2026-07-16] — Bug: KMeans.predict() rompía con embeddings de sentence-transformers (dtype mismatch)
+- **Tipo**: bug
+- **Qué**: `api/modelo.py` (`construir_features`, T12) fallaba con `ValueError: Buffer dtype mismatch, expected 'const float' but got 'double'` al asignar el tema de un título nuevo con `kmeans_temas.predict()`.
+- **Por qué / causa raíz**: `kmeans_temas` (T4) se ajustó sobre embeddings leídos desde `df_features_titulo.csv` con pandas, que por defecto son `float64`. `sentence_transformers.encode()` en cambio devuelve `float32` por defecto. La implementación en Cython de `KMeans.predict()` de scikit-learn exige que `X` tenga el mismo dtype que `cluster_centers_`, y con tipos mezclados tira este error de bajo nivel en vez de castear automáticamente.
+- **Impacto**: se corrigió casteando el embedding a `float64` inmediatamente después de generarlo en `construir_features` (`api/modelo.py`), antes de usarlo tanto para `kmeans.predict()` como para las columnas `emb_*` del vector de features del LGBM (que también se entrenó con embeddings `float64` desde CSV). No hizo falta re-correr `STG_8`. Si en el futuro se cambia la fuente de los embeddings (ej. generarlos todos con `sentence-transformers` en vez de leerlos de un CSV), hay que revisar que el dtype siga siendo consistente en todo el pipeline.
+
+### [2026-07-16] — Spec 010, Parte B completa: API FastAPI funcionando (T9–T16)
+- **Tipo**: decisión
+- **Qué**: se implementó la carpeta `api/` completa:
+  - `api/database.py`: lee `df_consolidado.csv` y las tres tablas snapshot, cacheadas con `lru_cache` para no releer el CSV en cada pedido.
+  - `api/schemas.py`: esquemas Pydantic v2 (`DiputadoHistorial`, `PrediccionRequest` con validador de título no vacío, `PrediccionResponse`).
+  - `api/modelo.py`: carga los artefactos de `STG_8` y expone `construir_features(titulo)` (aislada, único lugar a tocar si se agrega una feature al modelo) y `predecir_votos(titulo)`.
+  - `api/routers/diputados.py`: `GET /diputados/{id}` — el `id` es el **nombre completo del diputado** (los datos no tienen ID numérico), 404 si no existe.
+  - `api/routers/predecir.py`: `POST /predecir`, devuelve la predicción de los 259 diputados del snapshot.
+  - `api/main.py`: arma la app FastAPI con `lifespan` (no el `@app.on_event` deprecado) para precargar todos los artefactos pesados (modelo, KMeans, embedder) una sola vez al iniciar.
+- **Por qué**: cerrar la Parte B de la spec 010 — la API ya sirve, por HTTP, lo mismo que hoy calcula `app/app.py` leyendo CSV directamente.
+- **Validado**: probado con `TestClient` y también con un servidor `uvicorn` real corriendo en `127.0.0.1:8000`. El arranque tarda ~52s (carga del modelo de embeddings de `sentence-transformers`), pero una vez arriba, `/predecir` responde en ~0.5s.
+- **Bug encontrado y resuelto**: ver entrada anterior (dtype mismatch `float32` vs `float64` entre `sentence-transformers` y el KMeans guardado).
+- **Dependencias nuevas instaladas** (entorno anaconda3): `fastapi`, `uvicorn`, `httpx`, `requests`. Pendiente reflejar en `requirements.txt` (T19).
+- **Impacto**: `api/` (nuevo, 7 archivos + `__init__.py`). Próximo paso: Parte C de la spec 010 — conectar `app/app.py` a la API por HTTP.
+
+### [2026-07-17] — Spec 010 COMPLETA: API FastAPI integrada con la app Streamlit (T17–T21)
+- **Tipo**: decisión
+- **Qué**: se cerraron las 21 tareas de `specs/010-api-fastapi/tasks.md`. `app/app.py` ya no lee ningún CSV directamente: el selector de diputados llama a `GET /diputados`, el historial a `GET /diputados/{id}`, y se agregó una sección nueva de predicción que llama a `POST /predecir` y muestra tema detectado, distribución de la predicción y la tabla completa. `requirements.txt` quedó con `fastapi==0.139.2`, `uvicorn==0.51.0`, `pydantic==2.12.4`, `requests==2.32.5` sumados a lo que ya había.
+- **Bug/mejora encontrada en el camino**: el formulario de predicción usaba `st.text_area` + `st.button` sueltos; el valor tipeado no llegaba sincronizado al backend si se hacía clic inmediatamente después de escribir (debounce de Streamlit — el servidor podía recibir el título vacío aunque el usuario ya lo hubiera completado). Se resolvió envolviendo el input y el botón en `st.form`, el patrón nativo de Streamlit para commitear todo junto al enviar. No es solo un fix para testing automatizado: evita que un usuario real dispare una predicción vacía por clickear rápido.
+- **Validación final (T20)**: los 7 criterios de aceptación de `spec.md` pasan (marcados `[x]` con nota de qué se verificó cada uno). Se confirmó además que `/predecir` es determinista (mismo título → misma predicción en llamadas repetidas) y que no queda ningún `pd.read_csv` en `app/app.py`.
+- **Deuda conocida, no bloqueante**: el snapshot de diputados tiene 259 personas en vez de los 257 de la nómina actual (arrastrado de `df_modelado.csv`, no introducido por esta spec — ver entrada del 2026-07-16). Queda para revisar en una spec futura si se quiere acotar a la nómina exacta.
+- **Fuera de alcance de la 010, confirmado como spec futura**: migración a Postgres/SQLAlchemy, login/JWT/bcrypt, deploy en Render/Streamlit Cloud, navegación multisección y gráficos Plotly/Altair (checklist de la cátedra, ítems no cubiertos todavía).
+- **Impacto**: `app/app.py` (modificado, ya no depende de `data/df_consolidado.csv` en tiempo de ejecución), `requirements.txt` (modificado), `.claude/launch.json` (nuevo, config para correr `api` y `streamlit` con el preview). Toda la cadena CSV → notebooks → artefactos → API → Streamlit está integrada de punta a punta.
+
+---
+
+## Cierre de sesión — 2026-07-17
+
+**Objetivo de la sesión**: implementar la spec 010 (API FastAPI) completa, desde la especificación hasta el código funcionando.
+
+**Qué se logró**: ciclo completo `/especificar` → `/planificar` → `/tareas` → `/implementar` de la spec 010. Las 21 tareas quedaron hechas y verificadas (con `TestClient`, con `uvicorn` real, y en el navegador vía Streamlit). La app dejó de depender de leer CSV en tiempo de ejecución para historial y predicción; ahora todo pasa por la API.
+
+**Qué quedó pendiente**: los ítems del checklist de la cátedra que se dejaron explícitamente fuera de alcance de la 010 (base de datos persistente, autenticación, deploy en la nube, mejoras de frontend) — son candidatos a specs futuras (011, 012, ...). También quedó la deuda conocida de los 259 vs 257 diputados, sin investigar a fondo.
+
+**Archivos tocados en la sesión**: `notebooks/STG_8_serializar_artefactos.ipynb` (nuevo), `api/` completo (nuevo), `app/app.py` (modificado), `requirements.txt` (modificado), `.claude/launch.json` (nuevo), `data/modelo_lgbm.joblib`, `data/kmeans_temas.joblib`, `data/mapa_temas.json`, `data/snapshot_diputado.csv`, `data/snapshot_diputado_tema.csv`, `data/snapshot_bloque_tema.csv` (todos nuevos), `specs/010-api-fastapi/` (spec, plan, tasks — completos y aprobados).
+
+### [2026-07-17] — Bug: bloque desactualizado en `/diputados/{id}` (encontrado en `/revisar`)
+- **Tipo**: bug
+- **Qué**: `obtener_historial_diputado` (`api/database.py`) devolvía el bloque/provincia con `df_dip["bloque"].iloc[0]` — la primera fila del diputado tal como aparece en `df_consolidado.csv`, no la más reciente.
+- **Por qué / causa raíz**: `df_consolidado.csv` no está ordenado por fecha dentro de cada diputado (confirmado: `df.equals(df.sort_values(['diputado','fecha_votacion']))` da `False`). Para los 98 diputados que cambiaron de bloque a lo largo del tiempo, `.iloc[0]` podía traer un bloque viejo. Esto ya venía de la app v1 original, pero al agregar `/predecir` — que sí usa el bloque más reciente en `snapshot_diputado.csv` (T5) — quedó expuesta una inconsistencia real: 39 de esos 98 diputados mostraban un bloque distinto entre `/diputados/{id}` y `/predecir` para la misma persona.
+- **Impacto**: se corrigió ordenando por `fecha_votacion` descendente antes de tomar `bloque`/`provincia` (T22). Verificado: los 98 diputados con más de un bloque ahora coinciden entre ambos endpoints.
+
+### [2026-07-17] — Mejora: precarga completa de datos al iniciar la API (encontrado en `/revisar`)
+- **Tipo**: bug
+- **Qué**: `modelo.precargar_artefactos()` calentaba el modelo LGBM, el KMeans y el embedder, pero no las funciones cacheadas de `api/database.py` (`df_consolidado.csv` y las tres tablas snapshot). El primer pedido real a `/diputados/{id}` o `/predecir` después de arrancar pagaba el costo de leer esos CSV, contra el objetivo declarado de T15 ("cargar todos los artefactos al iniciar").
+- **Por qué / causa raíz**: al escribir `precargar_artefactos()` (T15) solo se pensó en los artefactos de Machine Learning, no en los de `database.py`.
+- **Impacto**: se agregaron las 4 llamadas de `database.py` a `precargar_artefactos()` (T23). Verificado con un servidor `uvicorn` recién arrancado: primer pedido a `/diputados/{id}` en 0.069s y a `/predecir` en 0.380s (antes hubiera incluido la lectura de los CSV).
+
 ### [2026-07-13] — Bug recurrente: saltos de línea reales dentro de strings (SyntaxError)
 - **Tipo**: bug
 - **Qué**: varias celdas de STG_5, STG_6 y STG_7 tenían un salto de línea real pegado dentro de un string de comillas simples/dobles (en vez de `\n` escapado), lo que da `SyntaxError: unterminated string literal` al ejecutar la celda. Apareció en: STG_5 T8 (`raise AssertionError(...)`), STG_6 T18 (`ax.set_title(f'...')`), STG_6 T19 (diccionario `grupos = {...}`), STG_7 T22 (lista `x = ['Por defecto...', 'Afinado...']`).

@@ -44,23 +44,35 @@ placeholder de predicción).
   "Riesgos conocidos".
 
 ## Criterios de aceptación
-- [ ] La API corre localmente (`uvicorn`) y expone `/diputados/{id}` y `/predecir`,
-      documentados automáticamente en `/docs` (Swagger de FastAPI).
-- [ ] El código está organizado en al menos: `main.py`, un módulo de rutas (routers),
+- [x] La API corre localmente (`uvicorn`) y expone `/diputados/{id}` y `/predecir`,
+      documentados automáticamente en `/docs` (Swagger de FastAPI). **Verificado**: `/docs`
+      responde 200, `openapi.json` lista `/`, `/diputados`, `/diputados/{id}` y `/predecir`.
+- [x] El código está organizado en al menos: `main.py`, un módulo de rutas (routers),
       un módulo de esquemas (Pydantic) y un módulo de acceso a datos (`database.py`) — no
-      todo en un solo archivo.
-- [ ] `/diputados/{id}` devuelve los mismos datos que hoy muestra la app (bloque,
+      todo en un solo archivo. **Verificado**: `api/main.py`, `api/routers/`,
+      `api/schemas.py`, `api/database.py`, más `api/modelo.py` para la lógica de ML.
+- [x] `/diputados/{id}` devuelve los mismos datos que hoy muestra la app (bloque,
       provincia, conteo de votos, últimas 10 votaciones) para un diputado válido, y un
-      error controlado (404) para un id inexistente.
-- [ ] `/predecir` recibe un título de ley y devuelve la predicción para los 257 diputados
+      error controlado (404) para un id inexistente. **Verificado** con un diputado real y
+      uno inexistente, en `TestClient`, `uvicorn` real y en el navegador (Streamlit).
+- [x] `/predecir` recibe un título de ley y devuelve la predicción para los 257 diputados
       actuales, reutilizando el modelo ya entrenado en la spec 009 sin volver a entrenarlo.
-- [ ] Pydantic valida los datos de entrada (ej. que el título no esté vacío) y devuelve un
-      error claro si no cumplen el formato esperado.
-- [ ] La app Streamlit deja de leer los CSV directamente para estas dos funcionalidades y
-      pasa a llamar a la API por HTTP (`requests`).
-- [ ] Cumple la Constitución: no se reentrena el modelo (se reutiliza el de la spec 009,
+      **Verificado**, con una salvedad: el snapshot tiene **259** diputados, no 257 (ver
+      nota en `memoria/DECISIONES.md`, 2026-07-16 — viene de `df_modelado.csv` tal cual
+      está hoy, no es un defecto introducido por esta spec). También se verificó
+      determinismo: el mismo título da exactamente la misma predicción en llamadas
+      repetidas.
+- [x] Pydantic valida los datos de entrada (ej. que el título no esté vacío) y devuelve un
+      error claro si no cumplen el formato esperado. **Verificado**: título vacío/con solo
+      espacios → 422.
+- [x] La app Streamlit deja de leer los CSV directamente para estas dos funcionalidades y
+      pasa a llamar a la API por HTTP (`requests`). **Verificado**: no queda ningún
+      `pd.read_csv` en `app/app.py`; probado en el navegador con la API corriendo.
+- [x] Cumple la Constitución: no se reentrena el modelo (se reutiliza el de la spec 009,
       ya validado con F1-macro y validación temporal), la API no introduce fuga de
-      información nueva, y las semillas/artefactos usados son reproducibles.
+      información nueva, y las semillas/artefactos usados son reproducibles. **Verificado**:
+      la API solo carga artefactos (nunca llama a `.fit()`), y las predicciones son
+      deterministas entre llamadas.
 
 ## Fuera de alcance
 - Migración de CSV a base de datos persistente (Postgres/SQLite + SQLAlchemy) — spec futura.
