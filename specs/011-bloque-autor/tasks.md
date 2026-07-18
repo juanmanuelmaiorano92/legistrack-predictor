@@ -71,11 +71,11 @@
       `data/autores_pendientes.csv` (con títulos, fechas y motivo), y pre-carga de los
       pendientes en `tabla_autor_bloque_manual.csv` para el completado manual del equipo.
       (depende de: T9)
-- [ ] T11 — Corrida de reproducibilidad: re-ejecutar el notebook completo y verificar que
+- [x] T11 — Corrida de reproducibilidad: re-ejecutar el notebook completo y verificar que
       las tres salidas son idénticas a la corrida anterior (comparación de contenido).
       (depende de: T10)
-- [ ] T12 — Validar contra los criterios de aceptación de `spec.md` uno por uno y marcar
+- [x] T12 — Validar contra los criterios de aceptación de `spec.md` uno por uno y marcar
       el checklist con evidencia de cada verificación. (depende de: T11)
-- [ ] T13 — Registrar en `memoria/DECISIONES.md`: resultado final, conteos por fuente,
+- [x] T13 — Registrar en `memoria/DECISIONES.md`: resultado final, conteos por fuente,
       decisiones tomadas durante la implementación y qué queda pendiente de completado
       manual. (depende de: T12)
